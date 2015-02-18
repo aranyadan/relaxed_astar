@@ -93,20 +93,13 @@ void RAstarPlannerROS::initialize(std::string name, costmap_2d::Costmap2DROS* co
   {
     costmap_ros_ = costmap_ros;
     costmap_ = costmap_ros_->getCostmap();
-    //costmap_->saveMap("costmapppp3");
 
     ros::NodeHandle private_nh("~/" + name);
 
     originX = costmap_->getOriginX();
     originY = costmap_->getOriginY();
 
-    //cout << endl << "the resolution is " << costmap_->getResolution() << endl;
-    //cout << endl << "the width is " << costmap_->getSizeInCellsX() << endl;
-    //cout << endl << "the height is " << costmap_->getSizeInCellsY() << endl;
-    //cout << endl << "the Origin x is " << costmap_->getOriginX() << endl;
-    //cout << endl << "the Origin Y is " << costmap_->getOriginY() << endl;
 
-cout<<endl<<"RAstar planner"<<endl;
 
 	width = costmap_->getSizeInCellsX();
 	height = costmap_->getSizeInCellsY();
@@ -114,30 +107,9 @@ cout<<endl<<"RAstar planner"<<endl;
 	mapSize = width*height;
 	tBreak = 1+1/(mapSize); 
 	value =0;
-/*
-vector<bool> m;
-   // OGM = new OccupancyGridMap(costmap_->getSizeInCellsX(), costmap_->getSizeInCellsY(), costmap_->getResolution());
-	OGM = new VectorMap(width, height);
-    for (unsigned int iy = 0; iy < costmap_->getSizeInCellsY(); iy++)
-    {
-      for (unsigned int ix = 0; ix < costmap_->getSizeInCellsX(); ix++)
-      {
-        unsigned int cost = static_cast<int>(costmap_->getCost(ix, iy));
-        //cout<<cost;
-        if (cost == 0)
-          m.push_back(true);
-        else
-          m.push_back(false);
-      }
-    }
 
-OGM->setMapLayout(m);
-*/
-    //OGM->exportMapLayout("willowOccupancy.pgm", OGM->getMapLayout());
 
 	OGM = new bool [mapSize]; 
-   // OGM = new OccupancyGridMap(costmap_->getSizeInCellsX(), costmap_->getSizeInCellsY(), costmap_->getResolution());
-	//OGM = new VectorMap(width, height);
     for (unsigned int iy = 0; iy < costmap_->getSizeInCellsY(); iy++)
     {
       for (unsigned int ix = 0; ix < costmap_->getSizeInCellsX(); ix++)
@@ -152,16 +124,9 @@ OGM->setMapLayout(m);
     }
 
 
-/*
-	g_score = (float**) malloc(sizeof( float*)*mapSize);
-	for(int i=0; i<mapSize; i++)
-		g_score[i] = (float*) malloc(sizeof(float)*2);
-*/
-
-
 	MyExcelFile << "StartID\tStartX\tStartY\tGoalID\tGoalX\tGoalY\tPlannertime(ms)\tpathLength\tnumberOfCells\t" << endl;
 
-
+    ROS_INFO("RAstar planner initialized successfully");
     initialized_ = true;
   }
   else
@@ -196,10 +161,6 @@ bool RAstarPlannerROS::makePlan(const geometry_msgs::PoseStamped& start, const g
   poseStampedMsgToTF(goal, goal_tf);
   poseStampedMsgToTF(start, start_tf);
 
-  //double useless_pitch, useless_roll, goal_yaw, start_yaw;
-  //start_tf.getBasis().getEulerYPR(start_yaw, useless_pitch, useless_roll);
-  //goal_tf.getBasis().getEulerYPR(goal_yaw, useless_pitch, useless_roll);
-
   // convert the start and goal positions
 
   float startX = start.pose.position.x;
@@ -208,57 +169,35 @@ bool RAstarPlannerROS::makePlan(const geometry_msgs::PoseStamped& start, const g
   float goalX = goal.pose.position.x;
   float goalY = goal.pose.position.y;
 
-
-  cout<<endl<<"start x = "<<start.pose.position.x<<endl;
-  cout<<"start y = "<<start.pose.position.y<<endl;
-
-
-  cout<<"goal x = "<<goal.pose.position.x<<endl;
-  cout<<"goal y = "<<goal.pose.position.y<<endl;
-
   getCorrdinate(startX, startY);
   getCorrdinate(goalX, goalY);
-
-    //clear the starting cell because we know it can't be an obstacle
-    //OGM->setFree(startY, startX);
 
   int startCell;
   int goalCell;
 
   if (isCellInsideMap(startX, startY) && isCellInsideMap(goalX, goalY))
   {
-
-    //cout<<endl<<"convert start cell.."<<endl;
     startCell = convertToCellIndex(startX, startY);
 
-    //cout<<endl<<"convert goal cell.."<<endl;
-
     goalCell = convertToCellIndex(goalX, goalY);
+
 MyExcelFile << startCell <<"\t"<< start.pose.position.x <<"\t"<< start.pose.position.y <<"\t"<< goalCell <<"\t"<< goal.pose.position.x <<"\t"<< goal.pose.position.y;
-    //cout <<endl<<"the indices are:"<<endl<< "start: "<<startCell<< " goal: "<< goalCell<<endl;
+
   }
   else
   {
-    cout << endl << "the start or goal is out of the map" << endl;
+    ROS_WARN("the start or goal is out of the map");
     return false;
   }
-
-  //cout<<endl<<"OGM->getCellIndex(452,251) "<<OGM->getCellIndex(452,251)<<endl;
-  //cout<<endl<<"OGM->getCellIndex(452,251) "<<OGM->isFree(OGM->getCellIndex(452,251))<<endl;
-  //cout<<endl<<" is free 332923? "<<OGM->isFree(332923)<<endl;
 
   /////////////////////////////////////////////////////////
 
   // call global planner
 
-  //GenericPathPlannerV* GPP = new GenericPathPlannerV();
-
   if (isStartAndGoalCellsValid(startCell, goalCell)){
 
-    vector<int> bestPath;
+        vector<int> bestPath;
 	bestPath.clear();
-cout<<endl<<"startCell "<<startCell <<endl;
-cout<<endl<<"goalCell "<<goalCell <<endl;
 
     bestPath = RAstarPlanner(startCell, goalCell);
 
@@ -279,14 +218,10 @@ cout<<endl<<"goalCell "<<goalCell <<endl;
         convertToCoordinate(index, x, y);
 
         geometry_msgs::PoseStamped pose = goal;
-    	//tf::Quaternion goal_quat = tf::createQuaternionFromYaw(target_yaw);
 
         pose.pose.position.x = x;
         pose.pose.position.y = y;
         pose.pose.position.z = 0.0;
-
-        //cout<<endl<<"pose.pose.position.x "<<pose.pose.position.x <<endl;
-        //cout<<endl<<"pose.pose.position.y "<<pose.pose.position.y <<endl;
 
         pose.pose.orientation.x = 0.0;
         pose.pose.orientation.y = 0.0;
@@ -311,22 +246,15 @@ cout<<endl<<"goalCell "<<goalCell <<endl;
 	}
 	cout <<"The global path length: "<< path_length<< " meters"<<endl;
 	MyExcelFile << "\t" <<path_length <<"\t"<< plan.size() <<endl;
-      //cout << endl << "plan.size() = " << plan.size() << endl;
-      //cout<< endl << "The global path length = "<< bestPath->getPathCost(OGM, true) <<endl;
       //publish the plan
 
-if (value == 30){
-MyExcelFile<<endl;
-value = 0;
-}
       return true;
 
     }
 
     else
     {
-      cout << endl << "The planner failed to find a path " << endl
-          << "Please choose other goal position, " << endl;
+      ROS_WARN("The planner failed to find a path, choose other goal position");
       return false;
     }
 
@@ -334,7 +262,7 @@ value = 0;
 
   else
   {
-    cout << "Not valid start or goal" << endl;
+    ROS_WARN("Not valid start or goal");
     return false;
   }
 
@@ -390,7 +318,6 @@ void RAstarPlannerROS::mapToWorld(double mx, double my, double& wx, double& wy){
 
 vector<int> RAstarPlannerROS::RAstarPlanner(int startCell, int goalCell){
 
-cout<<endl<<"****Relaxed A* planner****"<<endl;
    vector<int> bestPath;
 
 
@@ -404,8 +331,6 @@ for (uint i=0; i<mapSize; i++)
   /* take current time here */
    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
 
-   //RAStar* pathPlannerRAStar = new RAStar(8,true);
-
   bestPath=findPath(startCell, goalCell,  g_score);
 
    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
@@ -415,8 +340,6 @@ for (uint i=0; i<mapSize; i++)
    
    MyExcelFile <<"\t"<< (diff(time1,time2).tv_sec)*1e3 + (diff(time1,time2).tv_nsec)*1e-6 ;
 
-//cout<<"Best path found by RA*:"<<endl;
-//bestPath->printPath();
   return bestPath;
 
 }

@@ -52,18 +52,10 @@
 #include <nav_msgs/Path.h>
 #include <nav_msgs/GetPlan.h>
 
-#include <kobuki_msgs/BumperEvent.h> 
-#include <kobuki_msgs/CliffEvent.h> 
-#include <kobuki_msgs/WheelDropEvent.h> 
-#include <kobuki_msgs/PowerSystemEvent.h> 
-#include <kobuki_msgs/Led.h>
-
 #include <tf/tf.h>
 #include <tf/transform_datatypes.h>
 #include <tf/transform_listener.h>
 /** ********************************************/ 
-//#include "../../lib/Pose2D.h"
-//#include "../../lib/nav_lib.h"
 
 #include <boost/foreach.hpp>
 //#define forEach BOOST_FOREACH
